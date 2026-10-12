@@ -1,6 +1,6 @@
 const multiply = require("./multiply");
 const add = require("./add");
-const divide = require("./multiply");
+const divide = require("./divide");
 const subtract = require('./subtract')
 
 const processArgv = process.argv;
