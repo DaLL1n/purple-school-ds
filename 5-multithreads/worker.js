@@ -1,4 +1,3 @@
-const { log } = require("node:console");
 const { parentPort, workerData } = require("node:worker_threads");
 
 function countNums(array) {

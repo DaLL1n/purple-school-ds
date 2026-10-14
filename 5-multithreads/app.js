@@ -1,5 +1,6 @@
 const { Worker } = require("node:worker_threads");
 const { PerformanceObserver, performance } = require("perf_hooks");
+const cpu = require("os").cpus().length;
 
 const perfomanceObserver = new PerformanceObserver((items) => {
   items.getEntries().forEach((entry) => {
@@ -9,10 +10,12 @@ const perfomanceObserver = new PerformanceObserver((items) => {
 
 perfomanceObserver.observe({ entryTypes: ["measure"] });
 performance.mark("start");
-const array1 = Array.from({ length: 75_000 }, (_, i) => i + 1);
-const array2 = Array.from({ length: 75_000 }, (_, i) => i + 1);
-const array3 = Array.from({ length: 75_000 }, (_, i) => i + 1);
-const array4 = Array.from({ length: 75_000 }, (_, i) => i + 1);
+
+const array = Array.from({ length: 300_000 }, (_, i) => i + 1);
+const chunkSize = Math.ceil(array.length / cpu);
+const chunks = Array.from({ length: cpu }, (_, index) =>
+  array.slice(index * chunkSize, (index + 1) * chunkSize),
+);
 
 async function compute(array) {
   return new Promise((resolse, reject) => {
@@ -22,21 +25,18 @@ async function compute(array) {
     worker.on("message", (msg) => {
       resolse(msg);
     });
+    worker.on("error", reject);
   });
 }
 
 async function main() {
-  const result = await Promise.all([
-    compute(array1),
-    compute(array2),
-    compute(array3),
-    compute(array4),
-  ]);
+  const result = await Promise.all(chunks.map(compute));
 
   return result.reduce((acc, num) => acc + num, 0);
 }
 
-main();
-
-performance.mark("end");
-performance.measure("play", "start", "end");
+main().then((count) => {
+  performance.mark("end");
+  performance.measure("play", "start", "end");
+  console.log(count);
+});
